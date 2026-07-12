@@ -2,3 +2,9 @@ node_modules/
 dist/
 .env
 .DS_Store
+browser-check.mjs
+validate-zip.mjs
+test-logo.svg
+desktop.png
+mobile.png
+test-brand-kit.zip
