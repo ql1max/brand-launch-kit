@@ -21,11 +21,30 @@ function splitList(value: string) {
   return value.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
+function createUniqueFilename(filename: string, usedFilenames: Set<string>) {
+  const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '-') || 'logo';
+  const dotIndex = sanitized.lastIndexOf('.');
+  const hasExtension = dotIndex > 0;
+  const basename = hasExtension ? sanitized.slice(0, dotIndex) : sanitized;
+  const extension = hasExtension ? sanitized.slice(dotIndex) : '';
+  let candidate = sanitized;
+  let suffix = 2;
+
+  while (usedFilenames.has(candidate.toLowerCase())) {
+    candidate = `${basename}-${suffix}${extension}`;
+    suffix += 1;
+  }
+
+  usedFilenames.add(candidate.toLowerCase());
+  return candidate;
+}
+
 function App() {
   const [spec, setSpec] = useState<BrandSpecification>(readDraft);
   const [activeStep, setActiveStep] = useState(1);
   const [message, setMessage] = useState('Drafts stay in this browser. Nothing is uploaded.');
   const fileInput = useRef<HTMLInputElement>(null);
+  const hasInvalidColors = spec.colors.length === 0 || spec.colors.some((color) => !normalizeHex(color.value));
 
   useEffect(() => {
     try {
@@ -37,10 +56,10 @@ function App() {
 
   const completed = useMemo(() => [
     Boolean(spec.brand.name && spec.brand.description),
-    spec.colors.every((color) => Boolean(normalizeHex(color.value))),
+    !hasInvalidColors,
     spec.logos.length > 0,
     Boolean(spec.typography.heading && spec.typography.body),
-  ], [spec]);
+  ], [hasInvalidColors, spec]);
 
   const updateBrand = (key: keyof BrandSpecification['brand'], value: string | string[]) => {
     setSpec((current) => ({ ...current, brand: { ...current.brand, [key]: value } }));
@@ -61,6 +80,7 @@ function App() {
     if (!files) return;
     const accepted: LogoVariant[] = [];
     const rejected: string[] = [];
+    const usedFilenames = new Set(spec.logos.map((logo) => logo.filename.toLowerCase()));
     for (const file of Array.from(files)) {
       if (!VALID_TYPES.has(file.type) || file.size > MAX_FILE_SIZE) {
         rejected.push(file.name);
@@ -76,7 +96,7 @@ function App() {
         id: crypto.randomUUID(),
         name: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
         use: '',
-        filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '-'),
+        filename: createUniqueFilename(file.name, usedFilenames),
         mimeType: file.type,
         dataUrl,
         background: 'either',
@@ -155,7 +175,7 @@ function App() {
                       <div className="swatch" style={{ background: valid ?? '#f1efea', color: foreground }}>{valid ? `${contrast(valid, foreground).toFixed(1)}:1` : 'Invalid'}</div>
                       <div className="color-fields">
                         <label>Name<input value={color.name} onChange={(event) => updateColor(color.id, { name: event.target.value })} /></label>
-                        <label>Hex<div className="hex-input"><input type="color" value={valid ?? '#000000'} aria-label={`${color.name} color picker`} onChange={(event) => updateColor(color.id, { value: event.target.value })} /><input value={color.value} onChange={(event) => updateColor(color.id, { value: event.target.value })} aria-invalid={!valid} /></div></label>
+                        <div className="field"><span className="field-label">Hex</span><div className="hex-input"><input type="color" value={valid ?? '#000000'} aria-label={`${color.name} color picker`} onChange={(event) => updateColor(color.id, { value: event.target.value })} /><input value={color.value} aria-label={`${color.name} hex value`} onChange={(event) => updateColor(color.id, { value: event.target.value })} aria-invalid={!valid} /></div></div>
                         <label>Role<select value={color.role} onChange={(event) => updateColor(color.id, { role: event.target.value as BrandColor['role'] })}><option>primary</option><option>secondary</option><option>accent</option><option>neutral</option></select></label>
                       </div>
                       {valid && <div className="tone-row" aria-label={`${color.name} suggested tonal scale`}>{tonalScale(valid).map((tone) => <span key={tone} style={{ background: tone }} title={tone} />)}</div>}
@@ -230,9 +250,10 @@ function App() {
                   {['brand.json', 'brand-guidelines.md', 'website-prompt.md', 'SKILL.md', 'variables.css', `${spec.logos.length} logo asset${spec.logos.length === 1 ? '' : 's'}`].map((file) => <div key={file}><span aria-hidden="true">↗</span>{file}</div>)}
                 </div>
                 <div className="export-actions">
-                  <button className="primary-button" onClick={() => void downloadKit(spec)}>Download complete ZIP</button>
-                  <button className="secondary-button" onClick={() => downloadJson(spec)}>Download JSON only</button>
+                  <button className="primary-button" disabled={hasInvalidColors} onClick={() => void downloadKit(spec)}>Download complete ZIP</button>
+                  <button className="secondary-button" disabled={hasInvalidColors} onClick={() => downloadJson(spec)}>Download JSON only</button>
                 </div>
+                {hasInvalidColors && <p className="validation-message" role="alert">Fix invalid color values before exporting.</p>}
                 <p className="export-note">Suggested rules remain editable. Missing evidence stays marked TODO; the export never fabricates brand facts.</p>
               </fieldset>
             )}
@@ -241,7 +262,7 @@ function App() {
               <button className="text-button" onClick={reset}>Clear draft</button>
               <div>
                 {activeStep > 1 && <button className="secondary-button" onClick={() => setActiveStep((step) => step - 1)}>Back</button>}
-                {activeStep < 5 && <button className="primary-button" onClick={() => setActiveStep((step) => step + 1)}>Continue</button>}
+                {activeStep < 5 && <button className="primary-button" disabled={activeStep === 2 && hasInvalidColors} onClick={() => setActiveStep((step) => step + 1)}>Continue</button>}
               </div>
             </div>
           </section>
