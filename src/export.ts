@@ -2,9 +2,18 @@ import JSZip from 'jszip';
 import { bestForeground, contrast, normalizeHex, slugify, tonalScale } from './color';
 import type { BrandSpecification } from './types';
 
+function cleanRuleList(rules: string[]) {
+  return rules.map((rule) => rule.trim()).filter(Boolean);
+}
+
 function publicSpec(spec: BrandSpecification) {
   return {
     ...spec,
+    rules: {
+      ...spec.rules,
+      dos: cleanRuleList(spec.rules.dos),
+      donts: cleanRuleList(spec.rules.donts),
+    },
     logos: spec.logos.map((logo) => ({
       id: logo.id,
       name: logo.name,
@@ -79,11 +88,11 @@ ${spec.colors.map((color) => `- **${color.name} (${color.role}):** ${color.value
 
 ## Do
 
-${spec.rules.dos.map((rule) => `- ${rule}`).join('\n')}
+${cleanRuleList(spec.rules.dos).map((rule) => `- ${rule}`).join('\n') || '- TODO: Add approved brand behaviors.'}
 
 ## Do not
 
-${spec.rules.donts.map((rule) => `- ${rule}`).join('\n')}
+${cleanRuleList(spec.rules.donts).map((rule) => `- ${rule}`).join('\n') || '- TODO: Add brand treatments to avoid.'}
 `;
 }
 

@@ -21,11 +21,63 @@ function splitList(value: string) {
   return value.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
+function createUniqueFilename(filename: string, usedFilenames: Set<string>) {
+  const sanitized = filename.replace(/[^a-zA-Z0-9._-]/g, '-') || 'logo';
+  const dotIndex = sanitized.lastIndexOf('.');
+  const hasExtension = dotIndex > 0;
+  const basename = hasExtension ? sanitized.slice(0, dotIndex) : sanitized;
+  const extension = hasExtension ? sanitized.slice(dotIndex) : '';
+  let candidate = sanitized;
+  let suffix = 2;
+
+  while (usedFilenames.has(candidate.toLowerCase())) {
+    candidate = `${basename}-${suffix}${extension}`;
+    suffix += 1;
+  }
+
+  usedFilenames.add(candidate.toLowerCase());
+  return candidate;
+}
+
+interface RuleListEditorProps {
+  description: string;
+  label: string;
+  onChange: (rules: string[]) => void;
+  rules: string[];
+}
+
+function RuleListEditor({ description, label, onChange, rules }: RuleListEditorProps) {
+  const updateRule = (index: number, value: string) => {
+    onChange(rules.map((rule, ruleIndex) => ruleIndex === index ? value : rule));
+  };
+
+  const removeRule = (index: number) => {
+    onChange(rules.filter((_, ruleIndex) => ruleIndex !== index));
+  };
+
+  return (
+    <section className="rule-editor" aria-label={label}>
+      <h3>{label}</h3>
+      <p>{description}</p>
+      <div className="rule-rows">
+        {rules.map((rule, index) => (
+          <div className="rule-row" key={`${label}-${index}`}>
+            <input aria-label={`${label} rule ${index + 1}`} value={rule} onChange={(event) => updateRule(index, event.target.value)} />
+            <button type="button" className="text-button danger" onClick={() => removeRule(index)}>Remove</button>
+          </div>
+        ))}
+      </div>
+      <button type="button" className="secondary-button add-rule-button" onClick={() => onChange([...rules, ''])}>+ Add another rule</button>
+    </section>
+  );
+}
+
 function App() {
   const [spec, setSpec] = useState<BrandSpecification>(readDraft);
   const [activeStep, setActiveStep] = useState(1);
   const [message, setMessage] = useState('Drafts stay in this browser. Nothing is uploaded.');
   const fileInput = useRef<HTMLInputElement>(null);
+  const hasInvalidColors = spec.colors.length === 0 || spec.colors.some((color) => !normalizeHex(color.value));
 
   useEffect(() => {
     try {
@@ -37,10 +89,10 @@ function App() {
 
   const completed = useMemo(() => [
     Boolean(spec.brand.name && spec.brand.description),
-    spec.colors.every((color) => Boolean(normalizeHex(color.value))),
+    !hasInvalidColors,
     spec.logos.length > 0,
     Boolean(spec.typography.heading && spec.typography.body),
-  ], [spec]);
+  ], [hasInvalidColors, spec]);
 
   const updateBrand = (key: keyof BrandSpecification['brand'], value: string | string[]) => {
     setSpec((current) => ({ ...current, brand: { ...current.brand, [key]: value } }));
@@ -61,6 +113,7 @@ function App() {
     if (!files) return;
     const accepted: LogoVariant[] = [];
     const rejected: string[] = [];
+    const usedFilenames = new Set(spec.logos.map((logo) => logo.filename.toLowerCase()));
     for (const file of Array.from(files)) {
       if (!VALID_TYPES.has(file.type) || file.size > MAX_FILE_SIZE) {
         rejected.push(file.name);
@@ -76,7 +129,7 @@ function App() {
         id: crypto.randomUUID(),
         name: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
         use: '',
-        filename: file.name.replace(/[^a-zA-Z0-9._-]/g, '-'),
+        filename: createUniqueFilename(file.name, usedFilenames),
         mimeType: file.type,
         dataUrl,
         background: 'either',
@@ -99,7 +152,7 @@ function App() {
     setActiveStep(1);
   };
 
-  const steps = ['Identity', 'Color', 'Logos', 'Rules', 'Export'];
+  const steps = ['Identity', 'Color', 'Logos', 'Guidance', 'Export'];
 
   return (
     <div className="app-shell">
@@ -155,7 +208,7 @@ function App() {
                       <div className="swatch" style={{ background: valid ?? '#f1efea', color: foreground }}>{valid ? `${contrast(valid, foreground).toFixed(1)}:1` : 'Invalid'}</div>
                       <div className="color-fields">
                         <label>Name<input value={color.name} onChange={(event) => updateColor(color.id, { name: event.target.value })} /></label>
-                        <label>Hex<div className="hex-input"><input type="color" value={valid ?? '#000000'} aria-label={`${color.name} color picker`} onChange={(event) => updateColor(color.id, { value: event.target.value })} /><input value={color.value} onChange={(event) => updateColor(color.id, { value: event.target.value })} aria-invalid={!valid} /></div></label>
+                        <div className="field"><span className="field-label">Hex</span><div className="hex-input"><input type="color" value={valid ?? '#000000'} aria-label={`${color.name} color picker`} onChange={(event) => updateColor(color.id, { value: event.target.value })} /><input value={color.value} aria-label={`${color.name} hex value`} onChange={(event) => updateColor(color.id, { value: event.target.value })} aria-invalid={!valid} /></div></div>
                         <label>Role<select value={color.role} onChange={(event) => updateColor(color.id, { role: event.target.value as BrandColor['role'] })}><option>primary</option><option>secondary</option><option>accent</option><option>neutral</option></select></label>
                       </div>
                       {valid && <div className="tone-row" aria-label={`${color.name} suggested tonal scale`}>{tonalScale(valid).map((tone) => <span key={tone} style={{ background: tone }} title={tone} />)}</div>}
@@ -192,8 +245,8 @@ function App() {
 
             {activeStep === 4 && (
               <fieldset>
-                <legend><span>04</span> Confirm the rules</legend>
-                <p className="section-copy">Defaults are suggestions, not facts. Edit them to match the approved brand system.</p>
+                <legend><span>04</span> How should the brand be used?</legend>
+                <p className="section-copy">Turn brand decisions into practical instructions for anyone creating new work. The starting text is a suggestion—edit or remove anything that has not been approved.</p>
                 <div className="two-column">
                   <label>Heading font stack<input value={spec.typography.heading} onChange={(event) => setSpec((current) => ({ ...current, typography: { ...current.typography, heading: event.target.value } }))} /></label>
                   <label>Body font stack<input value={spec.typography.body} onChange={(event) => setSpec((current) => ({ ...current, typography: { ...current.typography, body: event.target.value } }))} /></label>
@@ -204,11 +257,13 @@ function App() {
                   <label>Corner style<select value={spec.layout.cornerStyle} onChange={(event) => setSpec((current) => ({ ...current, layout: { ...current.layout, cornerStyle: event.target.value as BrandSpecification['layout']['cornerStyle'] } }))}><option>square</option><option>subtle</option><option>rounded</option></select></label>
                 </div>
                 <label>Voice attributes <small>Comma-separated</small><input value={spec.voice.attributes.join(', ')} onChange={(event) => setSpec((current) => ({ ...current, voice: { attributes: splitList(event.target.value) } }))} /></label>
-                <label>Logo clear space<textarea rows={2} value={spec.rules.clearSpace} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, clearSpace: event.target.value } }))} /></label>
-                <label>Minimum logo size<textarea rows={2} value={spec.rules.minimumSize} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, minimumSize: event.target.value } }))} /></label>
-                <div className="two-column">
-                  <label>Do <small>One per line</small><textarea rows={5} value={spec.rules.dos.join('\n')} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, dos: event.target.value.split('\n').filter(Boolean) } }))} /></label>
-                  <label>Do not <small>One per line</small><textarea rows={5} value={spec.rules.donts.join('\n')} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, donts: event.target.value.split('\n').filter(Boolean) } }))} /></label>
+                <div className="logo-rule-grid">
+                  <label>Space around the logo <small>Keep text, images, and page edges away from the logo so it stays clear. Describe the safety area using part of the logo—for example, “leave space equal to the height of the symbol on every side.”</small><textarea rows={3} value={spec.rules.clearSpace} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, clearSpace: event.target.value } }))} /></label>
+                  <label>Smallest allowed logo size <small>This prevents the name or details becoming unreadable. If you do not have an approved size, leave the TODO in place. Example formats: “120 px wide on screen” or “25 mm wide in print.”</small><textarea rows={3} value={spec.rules.minimumSize} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, minimumSize: event.target.value } }))} /></label>
+                </div>
+                <div className="rule-list-grid">
+                  <RuleListEditor label="Always do" description="Add one approved behavior per row—things a designer or developer should preserve whenever they use the brand." rules={spec.rules.dos} onChange={(dos) => setSpec((current) => ({ ...current, rules: { ...current.rules, dos } }))} />
+                  <RuleListEditor label="Avoid" description="Add one misuse per row—changes or treatments that would make the brand inconsistent or damage the logo." rules={spec.rules.donts} onChange={(donts) => setSpec((current) => ({ ...current, rules: { ...current.rules, donts } }))} />
                 </div>
               </fieldset>
             )}
@@ -230,9 +285,10 @@ function App() {
                   {['brand.json', 'brand-guidelines.md', 'website-prompt.md', 'SKILL.md', 'variables.css', `${spec.logos.length} logo asset${spec.logos.length === 1 ? '' : 's'}`].map((file) => <div key={file}><span aria-hidden="true">↗</span>{file}</div>)}
                 </div>
                 <div className="export-actions">
-                  <button className="primary-button" onClick={() => void downloadKit(spec)}>Download complete ZIP</button>
-                  <button className="secondary-button" onClick={() => downloadJson(spec)}>Download JSON only</button>
+                  <button className="primary-button" disabled={hasInvalidColors} onClick={() => void downloadKit(spec)}>Download complete ZIP</button>
+                  <button className="secondary-button" disabled={hasInvalidColors} onClick={() => downloadJson(spec)}>Download JSON only</button>
                 </div>
+                {hasInvalidColors && <p className="validation-message" role="alert">Fix invalid color values before exporting.</p>}
                 <p className="export-note">Suggested rules remain editable. Missing evidence stays marked TODO; the export never fabricates brand facts.</p>
               </fieldset>
             )}
@@ -241,7 +297,7 @@ function App() {
               <button className="text-button" onClick={reset}>Clear draft</button>
               <div>
                 {activeStep > 1 && <button className="secondary-button" onClick={() => setActiveStep((step) => step - 1)}>Back</button>}
-                {activeStep < 5 && <button className="primary-button" onClick={() => setActiveStep((step) => step + 1)}>Continue</button>}
+                {activeStep < 5 && <button className="primary-button" disabled={activeStep === 2 && hasInvalidColors} onClick={() => setActiveStep((step) => step + 1)}>Continue</button>}
               </div>
             </div>
           </section>

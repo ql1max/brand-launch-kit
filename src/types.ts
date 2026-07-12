@@ -75,8 +75,8 @@ export const INITIAL_SPEC: BrandSpecification = {
     attributes: ['direct', 'useful'],
   },
   rules: {
-    clearSpace: 'Keep clear space equal to the height of the logo mark on every side.',
-    minimumSize: 'Confirm minimum sizes for each logo before production use.',
+    clearSpace: 'Leave an empty area around the logo equal to the height of its symbol on every side.',
+    minimumSize: 'TODO: Confirm the smallest readable size for each logo before production use.',
     dos: ['Use approved logo files without modification.'],
     donts: ['Do not stretch, skew, outline, or recolor the logo.'],
   },
