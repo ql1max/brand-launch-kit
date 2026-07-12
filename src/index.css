@@ -57,6 +57,17 @@ textarea { resize: vertical; line-height: 1.5; }
 select { cursor: pointer; }
 input[aria-invalid="true"] { border-color: #b52a21; }
 .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.logo-rule-grid, .rule-list-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.logo-rule-grid label { align-content: start; }
+.logo-rule-grid small { min-height: 5.5rem; color: var(--muted); font-size: .72rem; font-weight: 400; line-height: 1.5; }
+.rule-editor { align-content: start; padding: 1rem; border: 1px solid var(--line); background: #fff; }
+.rule-editor h3 { margin: 0; font-size: 1rem; }
+.rule-editor > p { min-height: 4.5rem; margin: .5rem 0 1rem; color: var(--muted); font-size: .74rem; line-height: 1.5; }
+.rule-rows { display: grid; gap: .6rem; }
+.rule-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .65rem; }
+.rule-row input { min-width: 0; }
+.rule-row .text-button { padding-inline: .25rem; }
+.add-rule-button { width: 100%; margin-top: .75rem; }
 
 .color-list, .logo-list { display: grid; gap: 1rem; margin-bottom: 1.25rem; }
 .color-card { display: grid; grid-template-columns: 5.5rem 1fr auto; border: 1px solid var(--line); background: #fff; }
@@ -141,7 +152,8 @@ button { cursor: pointer; }
   .steps button { display: flex; flex-direction: column; align-items: flex-start; padding: .8rem; }
   .draft-status { display: none; }
   .editor { padding: 1.25rem; min-height: 44rem; }
-  .two-column, .readiness { grid-template-columns: 1fr; }
+  .two-column, .logo-rule-grid, .rule-list-grid, .readiness { grid-template-columns: 1fr; }
+  .logo-rule-grid small, .rule-editor > p { min-height: 0; }
   .color-card { grid-template-columns: 4rem 1fr; }
   .swatch { min-height: 7rem; }
   .color-fields { grid-template-columns: 1fr; }
