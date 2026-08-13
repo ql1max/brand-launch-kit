@@ -13,19 +13,21 @@ A local-first brand handoff tool that turns colors, logo variants, and usage dec
 
 All processing happens in the browser. No files or brand data are uploaded.
 
-## Development
+## Architecture and toolchain
+
+This is a local-first single-page Vite + React + TypeScript app; Cloudflare Workers Static Assets serves the built `dist` directory. Use pnpm `11.21.0` exclusively for installs and scripts, with one repository-owned `pnpm-lock.yaml`. Bun has no role here, so there are no Bun scripts, dependencies, or lockfiles. TanStack is intentionally not included; add it only if future scope needs routed, data, or server primitives—not merely for consistency.
+
+## Getting started
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-Run `npm run lint` and `npm run build` before deployment.
-
-## Deployment
-
-The built static application is configured for Cloudflare Workers Static Assets:
+## Checks and deployment
 
 ```bash
-npm run deploy
+pnpm run check
+pnpm run build
+pnpm run deploy
 ```

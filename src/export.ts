@@ -41,7 +41,9 @@ export function createVariables(spec: BrandSpecification) {
     const shades = tonalScale(color.value);
     return [
       `  --brand-${name}: ${normalizeHex(color.value) ?? color.value};`,
-      ...[100, 300, 500, 700, 900].map((step, index) => `  --brand-${name}-${step}: ${shades[index]};`),
+      ...[100, 300, 500, 700, 900].map(
+        (step, index) => `  --brand-${name}-${step}: ${shades[index]};`,
+      ),
       `  --brand-on-${name}: ${bestForeground(color.value)};`,
     ];
   });
@@ -50,7 +52,12 @@ export function createVariables(spec: BrandSpecification) {
 
 export function createGuidelines(spec: BrandSpecification) {
   const logoRows = spec.logos.length
-    ? spec.logos.map((logo) => `- **${logo.name}:** Use ${logo.filename} ${logo.use ? `for ${logo.use}` : 'as labeled'}. Intended for ${logo.background} backgrounds.`).join('\n')
+    ? spec.logos
+        .map(
+          (logo) =>
+            `- **${logo.name}:** Use ${logo.filename} ${logo.use ? `for ${logo.use}` : 'as labeled'}. Intended for ${logo.background} backgrounds.`,
+        )
+        .join('\n')
     : '- TODO: Supply and approve logo variants before production use.';
   return `# ${spec.brand.name || 'Brand'} guidelines
 
@@ -88,11 +95,19 @@ ${spec.colors.map((color) => `- **${color.name} (${color.role}):** ${color.value
 
 ## Do
 
-${cleanRuleList(spec.rules.dos).map((rule) => `- ${rule}`).join('\n') || '- TODO: Add approved brand behaviors.'}
+${
+  cleanRuleList(spec.rules.dos)
+    .map((rule) => `- ${rule}`)
+    .join('\n') || '- TODO: Add approved brand behaviors.'
+}
 
 ## Do not
 
-${cleanRuleList(spec.rules.donts).map((rule) => `- ${rule}`).join('\n') || '- TODO: Add brand treatments to avoid.'}
+${
+  cleanRuleList(spec.rules.donts)
+    .map((rule) => `- ${rule}`)
+    .join('\n') || '- TODO: Add brand treatments to avoid.'
+}
 `;
 }
 
@@ -195,8 +210,13 @@ export async function downloadKit(spec: BrandSpecification) {
   zip.file('SKILL.md', createSkill(spec));
   zip.file('tokens/variables.css', createVariables(spec));
   zip.file('tokens/tokens.json', `${JSON.stringify(publicSpec(spec).colors, null, 2)}\n`);
-  zip.file('README.md', `# ${spec.brand.name || 'Brand'} implementation kit\n\nStart with brand.json. Use brand-guidelines.md for human-readable guidance, website-prompt.md to generate the guidelines site, and SKILL.md for ongoing AI-assisted implementation.\n`);
-  spec.logos.forEach((logo) => zip.file(`logos/${logo.filename}`, dataUrlToBase64(logo.dataUrl), { base64: true }));
+  zip.file(
+    'README.md',
+    `# ${spec.brand.name || 'Brand'} implementation kit\n\nStart with brand.json. Use brand-guidelines.md for human-readable guidance, website-prompt.md to generate the guidelines site, and SKILL.md for ongoing AI-assisted implementation.\n`,
+  );
+  spec.logos.forEach((logo) =>
+    zip.file(`logos/${logo.filename}`, dataUrlToBase64(logo.dataUrl), { base64: true }),
+  );
   const blob = await zip.generateAsync({ type: 'blob' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -207,7 +227,9 @@ export async function downloadKit(spec: BrandSpecification) {
 }
 
 export function downloadJson(spec: BrandSpecification) {
-  const blob = new Blob([`${JSON.stringify(publicSpec(spec), null, 2)}\n`], { type: 'application/json' });
+  const blob = new Blob([`${JSON.stringify(publicSpec(spec), null, 2)}\n`], {
+    type: 'application/json',
+  });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;
