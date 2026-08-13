@@ -1,7 +1,10 @@
 export function normalizeHex(value: string): string | null {
   const input = value.trim().replace(/^#/, '');
   if (/^[0-9a-f]{3}$/i.test(input)) {
-    return `#${input.split('').map((character) => character + character).join('')}`.toLowerCase();
+    return `#${input
+      .split('')
+      .map((character) => character + character)
+      .join('')}`.toLowerCase();
   }
   if (/^[0-9a-f]{6}$/i.test(input)) return `#${input.toLowerCase()}`;
   return null;
@@ -37,14 +40,27 @@ export function bestForeground(background: string) {
 export function mix(hex: string, target: '#ffffff' | '#000000', amount: number) {
   const source = rgb(hex);
   const destination = rgb(target);
-  const channel = (key: keyof typeof source) => Math.round(source[key] + (destination[key] - source[key]) * amount);
+  const channel = (key: keyof typeof source) =>
+    Math.round(source[key] + (destination[key] - source[key]) * amount);
   return `#${[channel('r'), channel('g'), channel('b')].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
 }
 
 export function tonalScale(hex: string) {
-  return [mix(hex, '#ffffff', 0.72), mix(hex, '#ffffff', 0.38), normalizeHex(hex) ?? hex, mix(hex, '#000000', 0.28), mix(hex, '#000000', 0.52)];
+  return [
+    mix(hex, '#ffffff', 0.72),
+    mix(hex, '#ffffff', 0.38),
+    normalizeHex(hex) ?? hex,
+    mix(hex, '#000000', 0.28),
+    mix(hex, '#000000', 0.52),
+  ];
 }
 
 export function slugify(value: string) {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'brand';
+  return (
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'brand'
+  );
 }

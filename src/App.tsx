@@ -11,14 +11,19 @@ const VALID_TYPES = new Set(['image/svg+xml', 'image/png', 'image/webp', 'image/
 function readDraft(): BrandSpecification {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? { ...INITIAL_SPEC, ...JSON.parse(stored) as BrandSpecification } : INITIAL_SPEC;
+    return stored
+      ? { ...INITIAL_SPEC, ...(JSON.parse(stored) as BrandSpecification) }
+      : INITIAL_SPEC;
   } catch {
     return INITIAL_SPEC;
   }
 }
 
 function splitList(value: string) {
-  return value.split(',').map((item) => item.trim()).filter(Boolean);
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function createUniqueFilename(filename: string, usedFilenames: Set<string>) {
@@ -48,7 +53,7 @@ interface RuleListEditorProps {
 
 function RuleListEditor({ description, label, onChange, rules }: RuleListEditorProps) {
   const updateRule = (index: number, value: string) => {
-    onChange(rules.map((rule, ruleIndex) => ruleIndex === index ? value : rule));
+    onChange(rules.map((rule, ruleIndex) => (ruleIndex === index ? value : rule)));
   };
 
   const removeRule = (index: number) => {
@@ -62,12 +67,24 @@ function RuleListEditor({ description, label, onChange, rules }: RuleListEditorP
       <div className="rule-rows">
         {rules.map((rule, index) => (
           <div className="rule-row" key={`${label}-${index}`}>
-            <input aria-label={`${label} rule ${index + 1}`} value={rule} onChange={(event) => updateRule(index, event.target.value)} />
-            <button type="button" className="text-button danger" onClick={() => removeRule(index)}>Remove</button>
+            <input
+              aria-label={`${label} rule ${index + 1}`}
+              value={rule}
+              onChange={(event) => updateRule(index, event.target.value)}
+            />
+            <button type="button" className="text-button danger" onClick={() => removeRule(index)}>
+              Remove
+            </button>
           </div>
         ))}
       </div>
-      <button type="button" className="secondary-button add-rule-button" onClick={() => onChange([...rules, ''])}>+ Add another rule</button>
+      <button
+        type="button"
+        className="secondary-button add-rule-button"
+        onClick={() => onChange([...rules, ''])}
+      >
+        + Add another rule
+      </button>
     </section>
   );
 }
@@ -77,35 +94,54 @@ function App() {
   const [activeStep, setActiveStep] = useState(1);
   const [message, setMessage] = useState('Drafts stay in this browser. Nothing is uploaded.');
   const fileInput = useRef<HTMLInputElement>(null);
-  const hasInvalidColors = spec.colors.length === 0 || spec.colors.some((color) => !normalizeHex(color.value));
+  const hasInvalidColors =
+    spec.colors.length === 0 || spec.colors.some((color) => !normalizeHex(color.value));
 
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(spec));
     } catch {
-      window.setTimeout(() => setMessage('Draft is too large for local storage. You can still export it now.'), 0);
+      window.setTimeout(
+        () => setMessage('Draft is too large for local storage. You can still export it now.'),
+        0,
+      );
     }
   }, [spec]);
 
-  const completed = useMemo(() => [
-    Boolean(spec.brand.name && spec.brand.description),
-    !hasInvalidColors,
-    spec.logos.length > 0,
-    Boolean(spec.typography.heading && spec.typography.body),
-  ], [hasInvalidColors, spec]);
+  const completed = useMemo(
+    () => [
+      Boolean(spec.brand.name && spec.brand.description),
+      !hasInvalidColors,
+      spec.logos.length > 0,
+      Boolean(spec.typography.heading && spec.typography.body),
+    ],
+    [hasInvalidColors, spec],
+  );
 
   const updateBrand = (key: keyof BrandSpecification['brand'], value: string | string[]) => {
     setSpec((current) => ({ ...current, brand: { ...current.brand, [key]: value } }));
   };
 
   const updateColor = (id: string, patch: Partial<BrandColor>) => {
-    setSpec((current) => ({ ...current, colors: current.colors.map((color) => color.id === id ? { ...color, ...patch } : color) }));
+    setSpec((current) => ({
+      ...current,
+      colors: current.colors.map((color) => (color.id === id ? { ...color, ...patch } : color)),
+    }));
   };
 
   const addColor = () => {
     setSpec((current) => ({
       ...current,
-      colors: [...current.colors, { id: crypto.randomUUID(), name: 'Accent', value: '#ff5b9d', role: 'accent', origin: 'user' }],
+      colors: [
+        ...current.colors,
+        {
+          id: crypto.randomUUID(),
+          name: 'Accent',
+          value: '#ff5b9d',
+          role: 'accent',
+          origin: 'user',
+        },
+      ],
     }));
   };
 
@@ -137,12 +173,19 @@ function App() {
       });
     }
     setSpec((current) => ({ ...current, logos: [...current.logos, ...accepted] }));
-    setMessage(rejected.length ? `Skipped ${rejected.join(', ')}. Use SVG, PNG, WebP, or JPEG files under 5 MB.` : `${accepted.length} logo asset${accepted.length === 1 ? '' : 's'} added locally.`);
+    setMessage(
+      rejected.length
+        ? `Skipped ${rejected.join(', ')}. Use SVG, PNG, WebP, or JPEG files under 5 MB.`
+        : `${accepted.length} logo asset${accepted.length === 1 ? '' : 's'} added locally.`,
+    );
     if (fileInput.current) fileInput.current.value = '';
   };
 
   const updateLogo = (id: string, patch: Partial<LogoVariant>) => {
-    setSpec((current) => ({ ...current, logos: current.logos.map((logo) => logo.id === id ? { ...logo, ...patch } : logo) }));
+    setSpec((current) => ({
+      ...current,
+      logos: current.logos.map((logo) => (logo.id === id ? { ...logo, ...patch } : logo)),
+    }));
   };
 
   const reset = () => {
@@ -157,7 +200,9 @@ function App() {
   return (
     <div className="app-shell">
       <header className="masthead">
-        <a className="wordmark" href="#top" aria-label="Brand Launch Kit home"><span>BLK</span> Brand Launch Kit</a>
+        <a className="wordmark" href="#top" aria-label="Brand Launch Kit home">
+          <span>BLK</span> Brand Launch Kit
+        </a>
         <p className="privacy-note">Local-first · no uploads</p>
       </header>
 
@@ -167,7 +212,10 @@ function App() {
             <p className="eyebrow">Brand systems, ready to build</p>
             <h1 id="page-title">From brand decisions to an implementation kit.</h1>
           </div>
-          <p className="lede">Add the essentials, review every suggestion, then export tokens, guidelines, a website prompt, and an AI coding skill in one portable package.</p>
+          <p className="lede">
+            Add the essentials, review every suggestion, then export tokens, guidelines, a website
+            prompt, and an AI coding skill in one portable package.
+          </p>
         </section>
 
         <div className="workspace">
@@ -175,150 +223,576 @@ function App() {
             <ol>
               {steps.map((step, index) => (
                 <li key={step}>
-                  <button className={activeStep === index + 1 ? 'active' : ''} onClick={() => setActiveStep(index + 1)} aria-current={activeStep === index + 1 ? 'step' : undefined}>
-                    <span>{String(index + 1).padStart(2, '0')}</span>{step}{completed[index] && <b aria-label="complete">✓</b>}
+                  <button
+                    type="button"
+                    className={activeStep === index + 1 ? 'active' : ''}
+                    onClick={() => setActiveStep(index + 1)}
+                    aria-current={activeStep === index + 1 ? 'step' : undefined}
+                  >
+                    <span>{String(index + 1).padStart(2, '0')}</span>
+                    {step}
+                    {completed[index] && <b aria-label="complete">✓</b>}
                   </button>
                 </li>
               ))}
             </ol>
-            <div className="draft-status" role="status">{message}</div>
+            <output className="draft-status">{message}</output>
           </nav>
 
           <section className="editor" aria-live="polite">
             {activeStep === 1 && (
               <fieldset>
-                <legend><span>01</span> Define the identity</legend>
-                <p className="section-copy">Give the exported tools enough context to make relevant choices without inventing a brand story.</p>
-                <label>Brand name<input value={spec.brand.name} onChange={(event) => updateBrand('name', event.target.value)} placeholder="North Star Studio" /></label>
-                <label>What does the brand do?<textarea value={spec.brand.description} onChange={(event) => updateBrand('description', event.target.value)} placeholder="A concise, factual description of the organization and its offer." rows={4} /></label>
-                <label>Primary audience<input value={spec.brand.audience} onChange={(event) => updateBrand('audience', event.target.value)} placeholder="Independent hospitality teams" /></label>
-                <label>Brand attributes <small>Comma-separated</small><input value={spec.brand.attributes.join(', ')} onChange={(event) => updateBrand('attributes', splitList(event.target.value))} placeholder="Warm, precise, optimistic" /></label>
+                <legend>
+                  <span>01</span> Define the identity
+                </legend>
+                <p className="section-copy">
+                  Give the exported tools enough context to make relevant choices without inventing
+                  a brand story.
+                </p>
+                <label>
+                  Brand name
+                  <input
+                    value={spec.brand.name}
+                    onChange={(event) => updateBrand('name', event.target.value)}
+                    placeholder="North Star Studio"
+                  />
+                </label>
+                <label>
+                  What does the brand do?
+                  <textarea
+                    value={spec.brand.description}
+                    onChange={(event) => updateBrand('description', event.target.value)}
+                    placeholder="A concise, factual description of the organization and its offer."
+                    rows={4}
+                  />
+                </label>
+                <label>
+                  Primary audience
+                  <input
+                    value={spec.brand.audience}
+                    onChange={(event) => updateBrand('audience', event.target.value)}
+                    placeholder="Independent hospitality teams"
+                  />
+                </label>
+                <label>
+                  Brand attributes <small>Comma-separated</small>
+                  <input
+                    value={spec.brand.attributes.join(', ')}
+                    onChange={(event) => updateBrand('attributes', splitList(event.target.value))}
+                    placeholder="Warm, precise, optimistic"
+                  />
+                </label>
               </fieldset>
             )}
 
             {activeStep === 2 && (
               <fieldset>
-                <legend><span>02</span> Build the palette</legend>
-                <p className="section-copy">Add only approved colors. Tonal scales and accessible text pairings are calculated as implementation aids.</p>
+                <legend>
+                  <span>02</span> Build the palette
+                </legend>
+                <p className="section-copy">
+                  Add only approved colors. Tonal scales and accessible text pairings are calculated
+                  as implementation aids.
+                </p>
                 <div className="color-list">
                   {spec.colors.map((color) => {
                     const valid = normalizeHex(color.value);
                     const foreground = valid ? bestForeground(valid) : '#16161d';
-                    return <article className="color-card" key={color.id}>
-                      <div className="swatch" style={{ background: valid ?? '#f1efea', color: foreground }}>{valid ? `${contrast(valid, foreground).toFixed(1)}:1` : 'Invalid'}</div>
-                      <div className="color-fields">
-                        <label>Name<input value={color.name} onChange={(event) => updateColor(color.id, { name: event.target.value })} /></label>
-                        <div className="field"><span className="field-label">Hex</span><div className="hex-input"><input type="color" value={valid ?? '#000000'} aria-label={`${color.name} color picker`} onChange={(event) => updateColor(color.id, { value: event.target.value })} /><input value={color.value} aria-label={`${color.name} hex value`} onChange={(event) => updateColor(color.id, { value: event.target.value })} aria-invalid={!valid} /></div></div>
-                        <label>Role<select value={color.role} onChange={(event) => updateColor(color.id, { role: event.target.value as BrandColor['role'] })}><option>primary</option><option>secondary</option><option>accent</option><option>neutral</option></select></label>
-                      </div>
-                      {valid && <div className="tone-row" aria-label={`${color.name} suggested tonal scale`}>{tonalScale(valid).map((tone) => <span key={tone} style={{ background: tone }} title={tone} />)}</div>}
-                      {spec.colors.length > 1 && <button className="text-button danger" onClick={() => setSpec((current) => ({ ...current, colors: current.colors.filter((item) => item.id !== color.id) }))}>Remove</button>}
-                    </article>;
+                    return (
+                      <article className="color-card" key={color.id}>
+                        <div
+                          className="swatch"
+                          style={{ background: valid ?? '#f1efea', color: foreground }}
+                        >
+                          {valid ? `${contrast(valid, foreground).toFixed(1)}:1` : 'Invalid'}
+                        </div>
+                        <div className="color-fields">
+                          <label>
+                            Name
+                            <input
+                              value={color.name}
+                              onChange={(event) =>
+                                updateColor(color.id, { name: event.target.value })
+                              }
+                            />
+                          </label>
+                          <div className="field">
+                            <span className="field-label">Hex</span>
+                            <div className="hex-input">
+                              <input
+                                type="color"
+                                value={valid ?? '#000000'}
+                                aria-label={`${color.name} color picker`}
+                                onChange={(event) =>
+                                  updateColor(color.id, { value: event.target.value })
+                                }
+                              />
+                              <input
+                                value={color.value}
+                                aria-label={`${color.name} hex value`}
+                                onChange={(event) =>
+                                  updateColor(color.id, { value: event.target.value })
+                                }
+                                aria-invalid={!valid}
+                              />
+                            </div>
+                          </div>
+                          <label>
+                            Role
+                            <select
+                              value={color.role}
+                              onChange={(event) =>
+                                updateColor(color.id, {
+                                  role: event.target.value as BrandColor['role'],
+                                })
+                              }
+                            >
+                              <option>primary</option>
+                              <option>secondary</option>
+                              <option>accent</option>
+                              <option>neutral</option>
+                            </select>
+                          </label>
+                        </div>
+                        {valid && (
+                          <div
+                            className="tone-row"
+                            aria-label={`${color.name} suggested tonal scale`}
+                          >
+                            {tonalScale(valid).map((tone) => (
+                              <span key={tone} style={{ background: tone }} title={tone} />
+                            ))}
+                          </div>
+                        )}
+                        {spec.colors.length > 1 && (
+                          <button
+                            type="button"
+                            className="text-button danger"
+                            onClick={() =>
+                              setSpec((current) => ({
+                                ...current,
+                                colors: current.colors.filter((item) => item.id !== color.id),
+                              }))
+                            }
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </article>
+                    );
                   })}
                 </div>
-                <button className="secondary-button" onClick={addColor}>+ Add color</button>
+                <button type="button" className="secondary-button" onClick={addColor}>
+                  + Add color
+                </button>
               </fieldset>
             )}
 
             {activeStep === 3 && (
               <fieldset>
-                <legend><span>03</span> Add logo variants</legend>
-                <p className="section-copy">Assets are read locally and packaged as supplied. SVG markup is never injected into this page.</p>
+                <legend>
+                  <span>03</span> Add logo variants
+                </legend>
+                <p className="section-copy">
+                  Assets are read locally and packaged as supplied. SVG markup is never injected
+                  into this page.
+                </p>
                 <div className="upload-zone">
-                  <input ref={fileInput} id="logo-files" type="file" multiple accept=".svg,.png,.webp,.jpg,.jpeg,image/svg+xml,image/png,image/webp,image/jpeg" onChange={(event) => void handleFiles(event.target.files)} />
-                  <label htmlFor="logo-files"><strong>Choose logo files</strong><span>SVG, PNG, WebP, or JPEG · maximum 5 MB each</span></label>
+                  <input
+                    ref={fileInput}
+                    id="logo-files"
+                    type="file"
+                    multiple
+                    accept=".svg,.png,.webp,.jpg,.jpeg,image/svg+xml,image/png,image/webp,image/jpeg"
+                    onChange={(event) => void handleFiles(event.target.files)}
+                  />
+                  <label htmlFor="logo-files">
+                    <strong>Choose logo files</strong>
+                    <span>SVG, PNG, WebP, or JPEG · maximum 5 MB each</span>
+                  </label>
                 </div>
                 <div className="logo-list">
-                  {spec.logos.map((logo) => <article className="logo-card" key={logo.id}>
-                    <div className={`logo-preview ${logo.background === 'dark' ? 'dark' : ''}`}><img src={logo.dataUrl} alt="Uploaded logo preview" /></div>
-                    <div className="logo-fields">
-                      <label>Variant name<input value={logo.name} onChange={(event) => updateLogo(logo.id, { name: event.target.value })} /></label>
-                      <label>Use it for<input value={logo.use} onChange={(event) => updateLogo(logo.id, { use: event.target.value })} placeholder="Primary brand moments" /></label>
-                      <label>Approved background<select value={logo.background} onChange={(event) => updateLogo(logo.id, { background: event.target.value as LogoVariant['background'] })}><option value="either">Light and dark</option><option value="light">Light only</option><option value="dark">Dark only</option></select></label>
-                    </div>
-                    <button className="text-button danger" onClick={() => setSpec((current) => ({ ...current, logos: current.logos.filter((item) => item.id !== logo.id) }))}>Remove asset</button>
-                  </article>)}
-                  {!spec.logos.length && <p className="empty-state">No logo files yet. The export will preserve a clearly labeled TODO if you continue without them.</p>}
+                  {spec.logos.map((logo) => (
+                    <article className="logo-card" key={logo.id}>
+                      <div className={`logo-preview ${logo.background === 'dark' ? 'dark' : ''}`}>
+                        <img src={logo.dataUrl} alt="Uploaded logo preview" />
+                      </div>
+                      <div className="logo-fields">
+                        <label>
+                          Variant name
+                          <input
+                            value={logo.name}
+                            onChange={(event) => updateLogo(logo.id, { name: event.target.value })}
+                          />
+                        </label>
+                        <label>
+                          Use it for
+                          <input
+                            value={logo.use}
+                            onChange={(event) => updateLogo(logo.id, { use: event.target.value })}
+                            placeholder="Primary brand moments"
+                          />
+                        </label>
+                        <label>
+                          Approved background
+                          <select
+                            value={logo.background}
+                            onChange={(event) =>
+                              updateLogo(logo.id, {
+                                background: event.target.value as LogoVariant['background'],
+                              })
+                            }
+                          >
+                            <option value="either">Light and dark</option>
+                            <option value="light">Light only</option>
+                            <option value="dark">Dark only</option>
+                          </select>
+                        </label>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-button danger"
+                        onClick={() =>
+                          setSpec((current) => ({
+                            ...current,
+                            logos: current.logos.filter((item) => item.id !== logo.id),
+                          }))
+                        }
+                      >
+                        Remove asset
+                      </button>
+                    </article>
+                  ))}
+                  {!spec.logos.length && (
+                    <p className="empty-state">
+                      No logo files yet. The export will preserve a clearly labeled TODO if you
+                      continue without them.
+                    </p>
+                  )}
                 </div>
               </fieldset>
             )}
 
             {activeStep === 4 && (
               <fieldset>
-                <legend><span>04</span> How should the brand be used?</legend>
-                <p className="section-copy">Turn brand decisions into practical instructions for anyone creating new work. The starting text is a suggestion—edit or remove anything that has not been approved.</p>
+                <legend>
+                  <span>04</span> How should the brand be used?
+                </legend>
+                <p className="section-copy">
+                  Turn brand decisions into practical instructions for anyone creating new work. The
+                  starting text is a suggestion—edit or remove anything that has not been approved.
+                </p>
                 <div className="two-column">
-                  <label>Heading font stack<input value={spec.typography.heading} onChange={(event) => setSpec((current) => ({ ...current, typography: { ...current.typography, heading: event.target.value } }))} /></label>
-                  <label>Body font stack<input value={spec.typography.body} onChange={(event) => setSpec((current) => ({ ...current, typography: { ...current.typography, body: event.target.value } }))} /></label>
+                  <label>
+                    Heading font stack
+                    <input
+                      value={spec.typography.heading}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          typography: { ...current.typography, heading: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Body font stack
+                    <input
+                      value={spec.typography.body}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          typography: { ...current.typography, body: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
                 </div>
-                <label>Font source or licensing note<input value={spec.typography.source} onChange={(event) => setSpec((current) => ({ ...current, typography: { ...current.typography, source: event.target.value } }))} placeholder="URL or licensing instructions" /></label>
+                <label>
+                  Font source or licensing note
+                  <input
+                    value={spec.typography.source}
+                    onChange={(event) =>
+                      setSpec((current) => ({
+                        ...current,
+                        typography: { ...current.typography, source: event.target.value },
+                      }))
+                    }
+                    placeholder="URL or licensing instructions"
+                  />
+                </label>
                 <div className="two-column">
-                  <label>Spacing character<select value={spec.layout.spacingCharacter} onChange={(event) => setSpec((current) => ({ ...current, layout: { ...current.layout, spacingCharacter: event.target.value as BrandSpecification['layout']['spacingCharacter'] } }))}><option>compact</option><option>balanced</option><option>generous</option></select></label>
-                  <label>Corner style<select value={spec.layout.cornerStyle} onChange={(event) => setSpec((current) => ({ ...current, layout: { ...current.layout, cornerStyle: event.target.value as BrandSpecification['layout']['cornerStyle'] } }))}><option>square</option><option>subtle</option><option>rounded</option></select></label>
+                  <label>
+                    Spacing character
+                    <select
+                      value={spec.layout.spacingCharacter}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          layout: {
+                            ...current.layout,
+                            spacingCharacter: event.target
+                              .value as BrandSpecification['layout']['spacingCharacter'],
+                          },
+                        }))
+                      }
+                    >
+                      <option>compact</option>
+                      <option>balanced</option>
+                      <option>generous</option>
+                    </select>
+                  </label>
+                  <label>
+                    Corner style
+                    <select
+                      value={spec.layout.cornerStyle}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          layout: {
+                            ...current.layout,
+                            cornerStyle: event.target
+                              .value as BrandSpecification['layout']['cornerStyle'],
+                          },
+                        }))
+                      }
+                    >
+                      <option>square</option>
+                      <option>subtle</option>
+                      <option>rounded</option>
+                    </select>
+                  </label>
                 </div>
-                <label>Voice attributes <small>Comma-separated</small><input value={spec.voice.attributes.join(', ')} onChange={(event) => setSpec((current) => ({ ...current, voice: { attributes: splitList(event.target.value) } }))} /></label>
+                <label>
+                  Voice attributes <small>Comma-separated</small>
+                  <input
+                    value={spec.voice.attributes.join(', ')}
+                    onChange={(event) =>
+                      setSpec((current) => ({
+                        ...current,
+                        voice: { attributes: splitList(event.target.value) },
+                      }))
+                    }
+                  />
+                </label>
                 <div className="logo-rule-grid">
-                  <label>Space around the logo <small>Keep text, images, and page edges away from the logo so it stays clear. Describe the safety area using part of the logo—for example, “leave space equal to the height of the symbol on every side.”</small><textarea rows={3} value={spec.rules.clearSpace} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, clearSpace: event.target.value } }))} /></label>
-                  <label>Smallest allowed logo size <small>This prevents the name or details becoming unreadable. If you do not have an approved size, leave the TODO in place. Example formats: “120 px wide on screen” or “25 mm wide in print.”</small><textarea rows={3} value={spec.rules.minimumSize} onChange={(event) => setSpec((current) => ({ ...current, rules: { ...current.rules, minimumSize: event.target.value } }))} /></label>
+                  <label>
+                    Space around the logo{' '}
+                    <small>
+                      Keep text, images, and page edges away from the logo so it stays clear.
+                      Describe the safety area using part of the logo—for example, “leave space
+                      equal to the height of the symbol on every side.”
+                    </small>
+                    <textarea
+                      rows={3}
+                      value={spec.rules.clearSpace}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          rules: { ...current.rules, clearSpace: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Smallest allowed logo size{' '}
+                    <small>
+                      This prevents the name or details becoming unreadable. If you do not have an
+                      approved size, leave the TODO in place. Example formats: “120 px wide on
+                      screen” or “25 mm wide in print.”
+                    </small>
+                    <textarea
+                      rows={3}
+                      value={spec.rules.minimumSize}
+                      onChange={(event) =>
+                        setSpec((current) => ({
+                          ...current,
+                          rules: { ...current.rules, minimumSize: event.target.value },
+                        }))
+                      }
+                    />
+                  </label>
                 </div>
                 <div className="rule-list-grid">
-                  <RuleListEditor label="Always do" description="Add one approved behavior per row—things a designer or developer should preserve whenever they use the brand." rules={spec.rules.dos} onChange={(dos) => setSpec((current) => ({ ...current, rules: { ...current.rules, dos } }))} />
-                  <RuleListEditor label="Avoid" description="Add one misuse per row—changes or treatments that would make the brand inconsistent or damage the logo." rules={spec.rules.donts} onChange={(donts) => setSpec((current) => ({ ...current, rules: { ...current.rules, donts } }))} />
+                  <RuleListEditor
+                    label="Always do"
+                    description="Add one approved behavior per row—things a designer or developer should preserve whenever they use the brand."
+                    rules={spec.rules.dos}
+                    onChange={(dos) =>
+                      setSpec((current) => ({ ...current, rules: { ...current.rules, dos } }))
+                    }
+                  />
+                  <RuleListEditor
+                    label="Avoid"
+                    description="Add one misuse per row—changes or treatments that would make the brand inconsistent or damage the logo."
+                    rules={spec.rules.donts}
+                    onChange={(donts) =>
+                      setSpec((current) => ({ ...current, rules: { ...current.rules, donts } }))
+                    }
+                  />
                 </div>
               </fieldset>
             )}
 
             {activeStep === 5 && (
               <fieldset>
-                <legend><span>05</span> Export the kit</legend>
-                <p className="section-copy">The package is portable, versionable, and useful without this app. Review the summary before downloading.</p>
+                <legend>
+                  <span>05</span> Export the kit
+                </legend>
+                <p className="section-copy">
+                  The package is portable, versionable, and useful without this app. Review the
+                  summary before downloading.
+                </p>
                 <div className="readiness">
-                  <div><span>{spec.brand.name || 'Untitled brand'}</span><strong>{completed.filter(Boolean).length}/4 essentials ready</strong></div>
+                  <div>
+                    <span>{spec.brand.name || 'Untitled brand'}</span>
+                    <strong>{completed.filter(Boolean).length}/4 essentials ready</strong>
+                  </div>
                   <ul>
-                    <li className={completed[0] ? 'ready' : ''}>{completed[0] ? 'Ready' : 'Needs work'} · identity context</li>
-                    <li className={completed[1] ? 'ready' : ''}>{completed[1] ? 'Ready' : 'Needs work'} · valid colors</li>
-                    <li className={completed[2] ? 'ready' : ''}>{completed[2] ? 'Ready' : 'Optional TODO'} · logo assets</li>
-                    <li className={completed[3] ? 'ready' : ''}>{completed[3] ? 'Ready' : 'Needs work'} · typography</li>
+                    <li className={completed[0] ? 'ready' : ''}>
+                      {completed[0] ? 'Ready' : 'Needs work'} · identity context
+                    </li>
+                    <li className={completed[1] ? 'ready' : ''}>
+                      {completed[1] ? 'Ready' : 'Needs work'} · valid colors
+                    </li>
+                    <li className={completed[2] ? 'ready' : ''}>
+                      {completed[2] ? 'Ready' : 'Optional TODO'} · logo assets
+                    </li>
+                    <li className={completed[3] ? 'ready' : ''}>
+                      {completed[3] ? 'Ready' : 'Needs work'} · typography
+                    </li>
                   </ul>
                 </div>
                 <div className="package-grid">
-                  {['brand.json', 'brand-guidelines.md', 'website-prompt.md', 'SKILL.md', 'variables.css', `${spec.logos.length} logo asset${spec.logos.length === 1 ? '' : 's'}`].map((file) => <div key={file}><span aria-hidden="true">↗</span>{file}</div>)}
+                  {[
+                    'brand.json',
+                    'brand-guidelines.md',
+                    'website-prompt.md',
+                    'SKILL.md',
+                    'variables.css',
+                    `${spec.logos.length} logo asset${spec.logos.length === 1 ? '' : 's'}`,
+                  ].map((file) => (
+                    <div key={file}>
+                      <span aria-hidden="true">↗</span>
+                      {file}
+                    </div>
+                  ))}
                 </div>
                 <div className="export-actions">
-                  <button className="primary-button" disabled={hasInvalidColors} onClick={() => void downloadKit(spec)}>Download complete ZIP</button>
-                  <button className="secondary-button" disabled={hasInvalidColors} onClick={() => downloadJson(spec)}>Download JSON only</button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={hasInvalidColors}
+                    onClick={() => void downloadKit(spec)}
+                  >
+                    Download complete ZIP
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={hasInvalidColors}
+                    onClick={() => downloadJson(spec)}
+                  >
+                    Download JSON only
+                  </button>
                 </div>
-                {hasInvalidColors && <p className="validation-message" role="alert">Fix invalid color values before exporting.</p>}
-                <p className="export-note">Suggested rules remain editable. Missing evidence stays marked TODO; the export never fabricates brand facts.</p>
+                {hasInvalidColors && (
+                  <p className="validation-message" role="alert">
+                    Fix invalid color values before exporting.
+                  </p>
+                )}
+                <p className="export-note">
+                  Suggested rules remain editable. Missing evidence stays marked TODO; the export
+                  never fabricates brand facts.
+                </p>
               </fieldset>
             )}
 
             <div className="editor-footer">
-              <button className="text-button" onClick={reset}>Clear draft</button>
+              <button type="button" className="text-button" onClick={reset}>
+                Clear draft
+              </button>
               <div>
-                {activeStep > 1 && <button className="secondary-button" onClick={() => setActiveStep((step) => step - 1)}>Back</button>}
-                {activeStep < 5 && <button className="primary-button" disabled={activeStep === 2 && hasInvalidColors} onClick={() => setActiveStep((step) => step + 1)}>Continue</button>}
+                {activeStep > 1 && (
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={() => setActiveStep((step) => step - 1)}
+                  >
+                    Back
+                  </button>
+                )}
+                {activeStep < 5 && (
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={activeStep === 2 && hasInvalidColors}
+                    onClick={() => setActiveStep((step) => step + 1)}
+                  >
+                    Continue
+                  </button>
+                )}
               </div>
             </div>
           </section>
 
           <aside className="live-preview" aria-label="Live brand preview">
-            <div className="preview-label"><span>Live specimen</span><span>{String(activeStep).padStart(2, '0')} / 05</span></div>
-            <div className="brand-specimen" style={{ '--primary': normalizeHex(spec.colors[0]?.value) ?? '#5b4bff', '--on-primary': bestForeground(spec.colors[0]?.value ?? '#5b4bff'), '--heading-font': spec.typography.heading } as React.CSSProperties}>
-              <div className="specimen-top"><span>{spec.brand.name || 'Your brand'}</span><span>Guidelines / 01</span></div>
-              <div className="specimen-body">
-                {spec.logos[0] ? <img src={spec.logos[0].dataUrl} alt="" /> : <div className="logo-placeholder">Logo</div>}
-                <p>{spec.brand.description || 'A clear expression of what the brand does and why it matters.'}</p>
-              </div>
-              <div className="specimen-colors">{spec.colors.slice(0, 4).map((color) => <span key={color.id} style={{ background: normalizeHex(color.value) ?? '#ddd' }} />)}</div>
-              <div className="specimen-footer"><span>{spec.brand.attributes.slice(0, 3).join(' · ') || 'Clear · useful · distinct'}</span><strong>Brand system</strong></div>
+            <div className="preview-label">
+              <span>Live specimen</span>
+              <span>{String(activeStep).padStart(2, '0')} / 05</span>
             </div>
-            <p className="preview-caption">A directional preview only. The downloaded specification—not this composition—is the source of truth.</p>
+            <div
+              className="brand-specimen"
+              style={
+                {
+                  '--primary': normalizeHex(spec.colors[0]?.value) ?? '#5b4bff',
+                  '--on-primary': bestForeground(spec.colors[0]?.value ?? '#5b4bff'),
+                  '--heading-font': spec.typography.heading,
+                } as React.CSSProperties
+              }
+            >
+              <div className="specimen-top">
+                <span>{spec.brand.name || 'Your brand'}</span>
+                <span>Guidelines / 01</span>
+              </div>
+              <div className="specimen-body">
+                {spec.logos[0] ? (
+                  <img src={spec.logos[0].dataUrl} alt="" />
+                ) : (
+                  <div className="logo-placeholder">Logo</div>
+                )}
+                <p>
+                  {spec.brand.description ||
+                    'A clear expression of what the brand does and why it matters.'}
+                </p>
+              </div>
+              <div className="specimen-colors">
+                {spec.colors.slice(0, 4).map((color) => (
+                  <span
+                    key={color.id}
+                    style={{ background: normalizeHex(color.value) ?? '#ddd' }}
+                  />
+                ))}
+              </div>
+              <div className="specimen-footer">
+                <span>
+                  {spec.brand.attributes.slice(0, 3).join(' · ') || 'Clear · useful · distinct'}
+                </span>
+                <strong>Brand system</strong>
+              </div>
+            </div>
+            <p className="preview-caption">
+              A directional preview only. The downloaded specification—not this composition—is the
+              source of truth.
+            </p>
           </aside>
         </div>
       </main>
 
-      <footer className="site-footer"><p>Brand Launch Kit · A local-first design systems experiment</p><a href="https://github.com/ql1max/brand-launch-kit">Source code</a></footer>
+      <footer className="site-footer">
+        <p>Brand Launch Kit · A local-first design systems experiment</p>
+        <a href="https://github.com/ql1max/brand-launch-kit">Source code</a>
+      </footer>
     </div>
   );
 }
